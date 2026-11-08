@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produtividade Industrial · Painel C4</title>
+<meta name="description" content="Quanto valor cada pessoa ocupada gera por ano na indústria brasileira, por setor e por estado, e quanto pesa a folha. Dados abertos da Pesquisa Industrial Anual do IBGE.">
+<meta property="og:title" content="No mesmo setor, quanto valor 100 pessoas geram em cada estado?">
+<meta property="og:description" content="Painel interativo com a Pesquisa Industrial Anual do IBGE: valor da transformação por pessoa, por setor e estado, de 2007 a 2023, e uma calculadora para comparar a sua operação.">
+<meta property="og:image" content="https://goveiadev.github.io/c4-produtividade-industrial/painel/og.png">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="tema.css">
+<style>
+  .v-estados{grid-column:span 7}.v-calc{grid-column:span 5}.v-calor{grid-column:1/-1}.v-evo{grid-column:span 7}.v-folha{grid-column:span 5}
+  @media(max-width:1100px){.v-estados,.v-calc,.v-evo,.v-folha{grid-column:1/-1}}
+  .barras{position:relative;padding-top:16px}
+  .barras .linha{display:grid;grid-template-columns:132px minmax(0,1fr) 74px;gap:8px;align-items:center;width:100%;padding:2px 2px;border:0;background:transparent;text-align:left;border-radius:3px}
+  .barras .linha:hover{background:#eef4fe}.barras .linha.sel{background:#fff1d9}
+  .barras .n{font-size:11px;color:#40536f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.barras .linha.sel .n{font-weight:700;color:#7a4b0c}
+  .barras .trilho{position:relative;height:16px}.barras .trilho i{position:absolute;left:0;top:2px;height:12px;border-radius:0 2px 2px 0;min-width:2px}
+  .barras .val{font-size:11px;font-weight:600;color:#2d4466;text-align:right;white-space:nowrap}
+  .barras .marca{position:absolute;top:16px;bottom:0;width:0;border-left:1.5px dashed #8aa0c2;pointer-events:none}.barras .marca.m50{border-left:2px solid var(--laranja)}
+  .barras .marca span{position:absolute;top:-15px;left:-20px;width:40px;text-align:center;font-size:9px;color:#5c6a80}
+  @media(max-width:760px){.barras .marca.m25 span,.barras .marca.m75 span{display:none}}
+  .vazio{font-size:11px;color:#647188;padding:16px 4px}
+  .calor-box{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .calor{display:grid;gap:2px;min-width:760px}.calor .h{font-size:9.5px;color:#5c6a80;text-align:center;align-self:end;padding-bottom:2px}
+  .calor .r{font-size:10.5px;color:#40536f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px;align-self:center;text-align:right;cursor:pointer}
+  .calor .r.sel{font-weight:700;color:#284976}.calor .h.sel{font-weight:700;color:#7a4b0c}
+  .calor .c{height:20px;border-radius:2px;cursor:pointer;border:0;padding:0}.calor .c.nd{background:repeating-linear-gradient(45deg,#f2f4f8 0 3px,#e7ebf2 3px 6px);cursor:default}
+  .calor .c.sel{outline:2px solid #1b2a44;outline-offset:0}
+  .escala-cor{display:flex;align-items:center;gap:6px;font-size:10px;color:#5d6a80}.escala-cor .grad{width:160px;height:10px;border-radius:2px;background:linear-gradient(90deg,#7851be,#c9b8e8 35%,#f4f6fb 50%,#a8c4f2 65%,#2563d5)}
+  .calc{display:grid;grid-template-columns:1fr 1fr;gap:10px}.calc label{font-size:11px;font-weight:600;color:#4d586c;display:block;margin-bottom:5px}
+  .calc input{width:100%;height:34px;border:1px solid #cdd5e0;border-radius:3px;padding:4px 8px;font-size:13px}
+  .ficha{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.ficha>div{border:1px solid var(--border);border-radius:4px;padding:8px 10px;min-width:0}
+  .ficha .rot{font-size:10px;color:#5c6a80}.ficha .v{font-size:20px;font-weight:700;margin:2px 0;color:#284976;overflow-wrap:anywhere}
+  .ficha .ganho{background:#dff1e5;border-color:#b2d7bf}.ficha .ganho .v{color:#155d3e}.ficha .alerta .v{color:var(--ruim)}
+  .regua{position:relative;height:30px;margin:14px 4px 2px}.regua .faixa{position:absolute;top:11px;height:8px;background:#dfe6f3;border-radius:2px}
+  .regua .q{position:absolute;top:6px;width:2px;height:18px;background:#8aa0c2}.regua .q.m{background:var(--laranja)}
+  .regua .voce{position:absolute;top:0;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--azul);border:2px solid #fff;box-shadow:0 0 0 1px var(--azul)}
+  .regua-txt{display:flex;justify-content:space-between;font-size:9.5px;color:#647188;gap:6px}
+  .aviso{font-size:10px;color:#647188;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-line">
+    <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9h4v10M10 19V4h4v15M16 19V12h4v7"/></svg></div>
+    <div class="header-title"><div class="eyebrow">GOVEIADEV <span>/ PRODUTIVIDADE + CUSTO</span></div><h1>Produtividade industrial</h1><div class="subtitle">Setor × estado · Brasil · C4</div></div>
+    <div class="header-impact" aria-live="polite"><strong id="heroNum">—</strong><div><span id="heroRot">A MAIS DE VALOR POR ANO A CADA 100 PESSOAS</span><b>quartil de cima × de baixo dos estados</b><small id="heroTxt">—</small></div></div>
+    <div class="origin"><span>IBGE · PIA-EMPRESA</span><small>SIDRA 1849 · 2007–2023<br>Dados abertos</small></div>
+  </div>
+</header>
+<div class="workspace">
+  <aside class="filter-rail" aria-label="Filtros">
+    <div class="report-page">Visão por setor</div>
+    <div class="rail-title">FILTROS DO RELATÓRIO</div>
+    <div class="filters" role="group" aria-label="Filtros">
+      <div><label for="fSetor">Setor (divisão CNAE)</label><select id="fSetor"></select></div>
+      <div><label for="fUf">Estado</label><select id="fUf"></select></div>
+      <div><label for="fAno">Ano</label><select id="fAno"></select></div>
+      <div><span class="cab">Medida por pessoa</span><div class="botoes" id="fMed"><button type="button" data-m="vti" aria-pressed="true">Valor da transformação</button><button type="button" data-m="receita" aria-pressed="false">Receita líquida</button></div></div>
+    </div>
+    <div class="rail-note"><b>COMO LER</b>Valor da transformação industrial (VTI) = o que a fábrica produz menos o que ela consome de insumo. Dividido pelo pessoal ocupado, é quanto valor cada pessoa gera por ano.</div>
+    <div class="rail-note"><b>REGRA DA COMPARAÇÃO</b>Só entram estados com 1.000 pessoas ou mais no setor, e só setores com 6 estados nessa condição. Célula com sigilo do IBGE fica vazia.</div>
+  </aside>
+  <main class="shell">
+    <div class="scope" id="faixa">—</div>
+    <section class="kpis" aria-live="polite">
+      <div class="kpi k-azul"><label>Mediana dos estados no setor</label><strong id="kMed">—</strong><small id="kMedTxt">—</small></div>
+      <div class="kpi k-dourado"><label>Quartil de cima × de baixo, por 100 pessoas</label><strong id="kGap">—</strong><small id="kGapTxt">—</small></div>
+      <div class="kpi k-roxo"><label id="kUfRot">Estado escolhido</label><strong id="kUf">—</strong><small id="kUfTxt">—</small></div>
+      <div class="kpi k-claro"><label>Estado × mediana do setor</label><strong id="kDif">—</strong><small id="kDifTxt">—</small></div>
+      <div class="kpi k-marinho"><label>Peso da folha no estado</label><strong id="kFol">—</strong><small id="kFolTxt">—</small></div>
+      <div class="kpi k-verde"><label>Pessoas ocupadas no setor</label><strong id="kPo">—</strong><small id="kPoTxt">—</small></div>
+    </section>
+    <div class="readout"><span>LEITURA</span><div id="leitura">—</div></div>
+    <div class="grid">
+      <section class="panel v-estados"><div class="panel-head"><div><h2 id="tEst">Cada estado no setor</h2><p id="estSub">—</p></div></div>
+        <div class="legend"><span><i style="background:#2563d5"></i>estado</span><span><i style="background:#ca7820"></i>estado escolhido</span><span><i style="background:transparent;border-left:2px solid #ca7820;border-radius:0;width:2px"></i>mediana</span><span><i style="background:transparent;border-left:2px dashed #8aa0c2;border-radius:0;width:2px"></i>quartis</span></div>
+                <div class="barras" id="estados"></div>
+        <div class="panel-foot">Clique num estado para escolher. Valores em reais do ano, por pessoa ocupada em 31/12.</div></section>
+      <section class="panel v-calc p-verde"><div class="panel-head"><div><h2>E a sua operação?</h2><p id="calcSub">—</p></div></div>
+        <div class="calc">
+          <div><label for="cPes">Pessoas ocupadas</label><input id="cPes" class="tab" type="number" min="1" step="1" inputmode="numeric"></div>
+          <div><label for="cVal" id="cValRot">VTI no ano (R$ milhões)</label><input id="cVal" class="tab" type="number" min="0" step="0.1" inputmode="decimal"></div>
+        </div>
+        <div class="regua" id="regua" aria-hidden="true"></div><div class="regua-txt" id="reguaTxt"></div>
+        <div class="ficha">
+          <div><div class="rot">Sua operação, por pessoa</div><div class="v tab" id="cPor">—</div><div class="rot" id="cPos">—</div></div>
+          <div id="cBoxMed"><div class="rot">Até a mediana do setor</div><div class="v tab" id="cMed">—</div><div class="rot">por ano, com a mesma equipe</div></div>
+          <div class="ganho" style="grid-column:1/-1"><div class="rot">Até o quartil de cima do setor</div><div class="v tab" id="cQ3">—</div><div class="rot">por ano, com a mesma equipe</div></div>
+        </div>
+        <div class="aviso">Os valores vêm preenchidos com um exemplo. Troque pelos da sua operação: nada sai do seu navegador. É uma comparação com a mediana dos estados, não uma meta. Mistura de produto, escala e terceirização mudam o número.</div></section>
+      <section class="panel v-calor p-dourado"><div class="panel-head"><div><h2>Mapa de calor: setor × estado</h2><p id="calorSub">—</p></div></div>
+        <div class="escala-cor"><span>abaixo da mediana do setor</span><span class="grad"></span><span>acima</span><span style="margin-left:10px"><i style="display:inline-block;width:12px;height:10px;background:repeating-linear-gradient(45deg,#f2f4f8 0 3px,#e7ebf2 3px 6px);vertical-align:middle"></i> sem dado ou menos de 1.000 pessoas</span></div>
+        <div class="calor-box"><div class="calor" id="calor"></div></div>
+        <div class="panel-foot">Cada célula compara o estado com a mediana dos estados naquele setor. Clique para escolher setor e estado.</div></section>
+      <section class="panel v-evo"><div class="panel-head"><div><h2 id="tEvo">O estado ao longo do tempo</h2><p id="evoSub">—</p></div></div>
+        <div class="legend"><span><i style="background:#2563d5;height:3px"></i>estado ÷ mediana do setor</span><span><i style="background:#dfe6f3"></i>faixa entre os quartis</span><span><i style="background:#ca7820;height:2px"></i>mediana = 100</span></div>
+        <svg id="svgEvo" role="img" aria-label="Produtividade do estado em relação à mediana do setor, 2007 a 2023"></svg></section>
+      <section class="panel v-folha p-roxo"><div class="panel-head"><div><h2>Quanto do valor vai para a folha</h2><p>Salários e encargos a cada R$ 100 de VTI.</p></div></div>
+        <div class="legend"><span><i style="background:#7851be;height:3px"></i>setor, Brasil</span><span><i style="background:#ca7820;height:3px"></i>estado escolhido</span><span><i style="background:#8392aa;height:2px"></i>indústria toda</span></div>
+        <svg id="svgFol" role="img" aria-label="Peso da folha no valor da transformação, 2007 a 2023"></svg></section>
+    </div>
+    <details><summary>Como funciona — e o que este painel não permite afirmar</summary><ul class="method">
+      <li><b>Fonte:</b> Pesquisa Industrial Anual – Empresa, do IBGE, tabela SIDRA 1849: unidades locais industriais de empresas com 5 ou mais pessoas ocupadas, por estado e divisão da CNAE 2.0, de 2007 a 2023. Valores em reais correntes de cada ano.</li>
+      <li><b>Valor por pessoa</b> = valor da transformação industrial (ou receita líquida) ÷ pessoal ocupado em 31/12. <b>Peso da folha</b> = (salários + encargos) ÷ VTI.</li>
+      <li><b>Quartis e mediana</b> são calculados entre os estados com 1.000 pessoas ou mais no setor, sem ponderar pelo tamanho. O número do topo é a mediana, entre os setores, da distância entre o quartil de cima e o de baixo.</li>
+      <li><b>VTI não é lucro.</b> Não desconta depreciação, despesas comerciais e financeiras. Pessoal ocupado não é hora trabalhada, e terceirizado não entra: setor que terceiriza muito parece mais produtivo.</li>
+      <li><b>A divisão da CNAE é ampla.</b> Parte da distância entre estados é mistura de produto e escala, não eficiência. O quartil de baixo diz onde perguntar, não quanto dá para ganhar.</li>
+      <li><b>Entre anos,</b> o painel compara só razões (estado ÷ mediana, folha ÷ VTI), que não dependem da inflação.</li></ul></details>
+    <footer><span><b>Ramon Goveia</b> · Ciência de dados e IA aplicadas a processos e custos</span><span>C4 · <a href="https://github.com/GoveiaDev/c4-produtividade-industrial">Código, notebook e limitações</a> · <a href="https://www.linkedin.com/in/ramon-goveia-92266443">LinkedIn</a></span></footer>
+  </main>
+</div>
+<div class="tooltip" id="dica" role="tooltip"></div>
+<script src="dados.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
